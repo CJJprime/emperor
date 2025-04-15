@@ -1,0 +1,82 @@
+C:\Users\Chris\PycharmProjects\T1-R4NT\.venv\Scripts\python.exe C:\Users\Chris\PycharmProjects\T1-R4NT\utils\movement_analyzer.py 
+2025-04-15 02:43:42 - INFO - Loaded recording from movement_2025-04-15_06-00-18.json
+2025-04-15 02:43:42 - INFO - 
+Lateral Movement Analysis:
+2025-04-15 02:43:42 - INFO - 
+w Movement:
+2025-04-15 02:43:42 - INFO - Average Velocity: 8.18 units/second
+2025-04-15 02:43:42 - INFO - Maximum Velocity: 17.68 units/second
+2025-04-15 02:43:42 - INFO - Average Duration: 1.62 seconds
+2025-04-15 02:43:42 - INFO - Movement Type: cardinal
+2025-04-15 02:43:42 - INFO - 
+s Movement:
+2025-04-15 02:43:42 - INFO - Average Velocity: 4.85 units/second
+2025-04-15 02:43:42 - INFO - Maximum Velocity: 13.21 units/second
+2025-04-15 02:43:42 - INFO - Average Duration: 1.05 seconds
+2025-04-15 02:43:42 - INFO - Movement Type: cardinal
+2025-04-15 02:43:42 - INFO - 
+q Movement:
+2025-04-15 02:43:42 - INFO - Average Velocity: 7.92 units/second
+2025-04-15 02:43:42 - INFO - Maximum Velocity: 11.89 units/second
+2025-04-15 02:43:42 - INFO - Average Duration: 2.16 seconds
+2025-04-15 02:43:42 - INFO - Movement Type: cardinal
+2025-04-15 02:43:42 - INFO - 
+e Movement:
+2025-04-15 02:43:42 - INFO - Average Velocity: 8.10 units/second
+2025-04-15 02:43:42 - INFO - Maximum Velocity: 11.89 units/second
+2025-04-15 02:43:42 - INFO - Average Duration: 1.37 seconds
+2025-04-15 02:43:42 - INFO - Movement Type: cardinal
+2025-04-15 02:43:42 - INFO - 
+w+q Movement:
+2025-04-15 02:43:42 - INFO - Average Velocity: 8.03 units/second
+2025-04-15 02:43:42 - INFO - Maximum Velocity: 11.84 units/second
+2025-04-15 02:43:42 - INFO - Average Duration: 0.89 seconds
+2025-04-15 02:43:42 - INFO - Movement Type: diagonal
+2025-04-15 02:43:42 - INFO - 
+w+e Movement:
+2025-04-15 02:43:42 - INFO - Average Velocity: 8.11 units/second
+2025-04-15 02:43:42 - INFO - Maximum Velocity: 11.31 units/second
+2025-04-15 02:43:42 - INFO - Average Duration: 1.10 seconds
+2025-04-15 02:43:42 - INFO - Movement Type: diagonal
+2025-04-15 02:43:42 - INFO - 
+s+q Movement:
+2025-04-15 02:43:42 - INFO - Average Velocity: 5.07 units/second
+2025-04-15 02:43:42 - INFO - Maximum Velocity: 9.04 units/second
+2025-04-15 02:43:42 - INFO - Average Duration: 0.65 seconds
+2025-04-15 02:43:42 - INFO - Movement Type: diagonal
+2025-04-15 02:43:42 - INFO - 
+s+e Movement:
+2025-04-15 02:43:42 - INFO - Average Velocity: 5.07 units/second
+2025-04-15 02:43:42 - INFO - Maximum Velocity: 9.01 units/second
+2025-04-15 02:43:42 - INFO - Average Duration: 1.02 seconds
+2025-04-15 02:43:42 - INFO - Movement Type: diagonal
+2025-04-15 02:43:42 - INFO - 
+Turning Movement Analysis:
+2025-04-15 02:43:42 - INFO - 
+w+a Turn:
+2025-04-15 02:43:42 - INFO - Angular Velocity: 113.41 degrees/second
+2025-04-15 02:43:42 - INFO - Linear Velocity: 8.04 units/second
+2025-04-15 02:43:42 - INFO - Turn Radius: 0.00 units
+2025-04-15 02:43:42 - INFO - Full Turn Time: 0.00 seconds
+2025-04-15 02:43:42 - INFO - 
+w+d Turn:
+2025-04-15 02:43:42 - INFO - Angular Velocity: 106.93 degrees/second
+2025-04-15 02:43:42 - INFO - Linear Velocity: 7.97 units/second
+2025-04-15 02:43:42 - INFO - Turn Radius: 0.00 units
+2025-04-15 02:43:42 - INFO - Full Turn Time: 0.00 seconds
+2025-04-15 02:43:42 - INFO - 
+s+a Turn:
+2025-04-15 02:43:42 - INFO - Angular Velocity: 149.58 degrees/second
+2025-04-15 02:43:42 - INFO - Linear Velocity: 4.77 units/second
+2025-04-15 02:43:42 - INFO - Turn Radius: 0.00 units
+2025-04-15 02:43:42 - INFO - Full Turn Time: 0.00 seconds
+2025-04-15 02:43:42 - INFO - 
+s+d Turn:
+2025-04-15 02:43:42 - INFO - Angular Velocity: 132.54 degrees/second
+2025-04-15 02:43:42 - INFO - Linear Velocity: 5.02 units/second
+2025-04-15 02:43:42 - INFO - Turn Radius: 3.35 units
+2025-04-15 02:43:42 - INFO - Full Turn Time: 2.40 seconds
+2025-04-15 02:43:42 - INFO - 
+Movement path plot saved to: C:\Users\Chris\PycharmProjects\T1-R4NT\tests\json\movement_path.png
+
+Process finished with exit code 0
