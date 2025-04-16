@@ -1,0 +1,99 @@
+import logging
+from typing import Optional
+from controllers.input_controller import InputController
+from config import KEY_BINDINGS
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+
+class Movement:
+    """Handles low-level movement execution through the input controller."""
+
+    def __init__(self):
+        self.input = InputController()
+        self.is_moving = False
+        self.current_movement_key = None
+
+    def start_forward(self) -> bool:
+        """Start moving forward."""
+        try:
+            if self.is_moving:
+                return True
+
+            key = KEY_BINDINGS["MOVE_FORWARD"]
+            self.input.press_key(key)
+            self.is_moving = True
+            self.current_movement_key = key
+            return True
+        except Exception as e:
+            logger.error(f"Error starting forward movement: {e}")
+            return False
+
+    def start_backward(self) -> bool:
+        """Start moving backward."""
+        try:
+            if self.is_moving:
+                return True
+
+            key = KEY_BINDINGS["MOVE_BACKWARD"]
+            self.input.press_key(key)
+            self.is_moving = True
+            self.current_movement_key = key
+            return True
+        except Exception as e:
+            logger.error(f"Error starting backward movement: {e}")
+            return False
+
+    def stop_moving(self) -> None:
+        """Stop any current movement."""
+        try:
+            if self.current_movement_key:
+                self.input.release_key(self.current_movement_key)
+            self.is_moving = False
+            self.current_movement_key = None
+        except Exception as e:
+            logger.error(f"Error stopping movement: {e}")
+
+    def start_rotation(self, direction: str) -> bool:
+        """
+        Start rotating in specified direction.
+
+        Args:
+            direction: Either 'left' or 'right'
+        """
+        try:
+            key = KEY_BINDINGS[f"ROTATE_{direction.upper()}"]
+            self.input.press_key(key)
+            return True
+        except Exception as e:
+            logger.error(f"Error starting rotation: {e}")
+            return False
+
+    def stop_rotation(self, direction: str) -> None:
+        """Stop rotation in specified direction."""
+        try:
+            key = KEY_BINDINGS[f"ROTATE_{direction.upper()}"]
+            self.input.release_key(key)
+        except Exception as e:
+            logger.error(f"Error stopping rotation: {e}")
+
+    def strafe(self, direction: str, press: bool) -> bool:
+        """
+        Start or stop strafing movement.
+
+        Args:
+            direction: Either 'left' or 'right'
+            press: True to start strafing, False to stop
+        """
+        try:
+            key = KEY_BINDINGS[f"STRAFE_{direction.upper()}"]
+            if press:
+                self.input.press_key(key)
+            else:
+                self.input.release_key(key)
+            return True
+        except Exception as e:
+            logger.error(f"Error during strafe: {e}")
+            return False
