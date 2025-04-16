@@ -1,0 +1,68 @@
+# Configuration file for Project T1-R4NT
+# Stores key mappings, screen regions, and other global settings.
+
+# Key mappings for character movement
+KEY_BINDINGS = {
+    "MOVE_FORWARD": "W",           # Move forward in the direction the character is facing
+    "MOVE_BACKWARD": "S",          # Move backward
+    "ROTATE_LEFT": "A",            # Rotate the character to the left
+    "ROTATE_RIGHT": "D",           # Rotate the character to the right
+    "STRAFE_LEFT": "Q",            # Strafe left without changing orientation
+    "STRAFE_RIGHT": "E",           # Strafe right without changing orientation
+}
+
+# Kill command for the bot (to stop execution immediately)
+KILL_COMMAND = ["alt", "f12"]
+
+# Screen regions for important game elements
+SCREEN_REGIONS = {
+    "CHARACTER_COORDINATES": {     # Region to read character's current coordinates
+        "top_left": (1287, 407),
+        "bottom_right": (1683, 461),
+    },
+    "PLAYER_HEALTH": {             # Region to read player health
+        "top_left": (102, 47),
+        "bottom_right": (349, 55),
+    },
+    "ENEMY_HEALTH": {              # Region to read enemy health
+        "top_left": (364, 46),
+        "bottom_right": (611, 58),
+    },
+    "ARROW_ORIENTATION": {         # Region to read arrow indicating character's facing direction
+        "top_left": (1635, 762),
+        "bottom_right": (1720, 838),
+    },
+}
+
+# Timing and delays (in seconds)
+TIMING = {
+    "DEFAULT_KEY_PRESS_DURATION": 0.1,  # Default time to hold a key down
+    "RANDOM_DELAY_VARIANCE": 0.05,     # Add random variance to delays for humanlike behavior
+}
+
+# Humanlike behavior enhancements
+HUMANLIKE_SETTINGS = {
+    "mouse_jitter": 0.02,  # Max pixel offset for random mouse movements (simulates natural hand movement)
+    "keypress_variation": 0.03,  # Random variation in keypress duration (seconds)
+    "reaction_time_range": (0.15, 0.4),  # Simulated human reaction time range (seconds)
+    "pause_chance": 0.05,  # Chance (5%) the bot "pauses" briefly to simulate human hesitation
+    "pause_duration_range": (0.5, 1.5),  # Duration of pauses (seconds)
+}
+
+# Logging settings
+LOGGING = {
+    "ENABLE_SCREENSHOTS": True,    # Whether to capture screenshots for debugging
+    "LOG_LEVEL": "DEBUG",          # Log levels: DEBUG, INFO, WARNING, ERROR
+}
+
+# General bot behavior
+BOT_SETTINGS = {
+    "MOVEMENT_SPEED": 1.0,         # Multiplier for movement speed (adjusts delays)
+    "MAX_RETRIES": 3,              # Max retries for certain actions like pathfinding
+}
+
+# Window management settings
+WINDOW_SETTINGS = {
+    "GAME_WINDOW_TITLE": "Star Wars™: The Old Republic™",  # Title of the game window
+    "WINDOW_ACTIVATE_DELAY": 0.5  # Delay after activating the window (in seconds)
+}
