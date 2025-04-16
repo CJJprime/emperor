@@ -1,0 +1,183 @@
+import pyautogui
+import time
+import config
+import easyocr
+import numpy as np
+import re
+import cv2
+from PIL import Image
+from environment.window_manager import activate_game_window
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+
+class CoordinateReader:
+    def __init__(self):
+        # Initialize EasyOCR with optimal settings for white text
+        self.reader = easyocr.Reader(['en'], gpu=False)
+        self.last_valid_coords = None
+        self.consecutive_failures = 0
+        self.max_consecutive_failures = 3
+
+    def preprocess_image(self, image_np):
+        """
+        Optimize image preprocessing for white text on dark background.
+        """
+        try:
+            # Convert to grayscale
+            gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
+
+            # Increase contrast
+            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+            enhanced = clahe.apply(gray)
+
+            # Threshold to separate white text
+            _, binary = cv2.threshold(enhanced, 200, 255, cv2.THRESH_BINARY)
+
+            # Remove noise
+            kernel = np.ones((2, 2), np.uint8)
+            cleaned = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
+
+            # Convert back to RGB (required for EasyOCR)
+            rgb = cv2.cvtColor(cleaned, cv2.COLOR_GRAY2RGB)
+
+            return rgb
+
+        except Exception as e:
+            logger.error(f"Image preprocessing failed: {e}")
+            return image_np
+
+    def validate_coordinates(self, x: int, y: int, z: int) -> bool:
+        """
+        Validate coordinate values with game-specific constraints.
+        """
+        try:
+            # Basic range checks based on observed values
+            if not (-2000 <= x <= 2000 and -2000 <= y <= 2000 and 0 <= z <= 100):
+                return False
+
+            # Check against last valid coordinates
+            if self.last_valid_coords:
+                last_x, last_y, last_z = self.last_valid_coords
+                # Max reasonable movement between reads
+                max_delta = 20  # Adjusted based on typical movement speed
+
+                if (abs(x - last_x) > max_delta or
+                        abs(y - last_y) > max_delta or
+                        abs(z - last_z) > 5):  # Z changes less frequently and in smaller amounts
+                    logger.debug(f"Large coordinate jump detected: {self.last_valid_coords} -> ({x}, {y}, {z})")
+                    return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Coordinate validation error: {e}")
+            return False
+
+    def parse_coordinate_string(self, text: str) -> tuple[int, int, int] | None:
+        """
+        Parse coordinate string with enhanced pattern matching.
+        """
+        try:
+            # Clean up the text
+            text = text.replace('\n', ' ').strip()
+
+            # Try different patterns
+            patterns = [
+                r'X:\s*(-?\d+)\s*Y:\s*(-?\d+)\s*Z:\s*(\d+)',  # Standard format
+                r'X\s*(-?\d+)\s*Y\s*(-?\d+)\s*Z\s*(\d+)',  # No colons
+                r'X[:\s]*(-?\d+)Y[:\s]*(-?\d+)Z[:\s]*(\d+)'  # Merged format
+            ]
+
+            for pattern in patterns:
+                match = re.search(pattern, text)
+                if match:
+                    x, y, z = map(int, match.groups())
+                    if self.validate_coordinates(x, y, z):
+                        return (x, y, z)
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Coordinate parsing error: {e}")
+            return None
+
+    def extract_coordinates(self) -> str | None:
+        """
+        Extract coordinates with improved accuracy and validation.
+        """
+        try:
+            activate_game_window()
+
+            region = config.SCREEN_REGIONS["CHARACTER_COORDINATES"]
+            top_left = region["top_left"]
+            bottom_right = region["bottom_right"]
+            width = bottom_right[0] - top_left[0]
+            height = bottom_right[1] - top_left[1]
+
+            # Take multiple screenshots for verification
+            readings = []
+            for _ in range(2):  # Two attempts for consistency
+                screenshot = pyautogui.screenshot(region=(top_left[0], top_left[1], width, height))
+                screenshot_np = np.array(screenshot)
+                processed_image = self.preprocess_image(screenshot_np)
+
+                # OCR with optimized parameters
+                results = self.reader.readtext(
+                    processed_image,
+                    detail=0,
+                    paragraph=False,
+                    allowlist='0123456789XYZ: -',
+                    contrast_ths=0.2,
+                    adjust_contrast=1.0,  # Increased for white text
+                    text_threshold=0.6,  # More strict text detection
+                    low_text=0.3,  # Adjusted for white text
+                    link_threshold=0.5,
+                    width_ths=0.7
+                )
+
+                for result in results:
+                    coords = self.parse_coordinate_string(result)
+                    if coords:
+                        readings.append(coords)
+
+                if readings:
+                    # Use the most recent valid reading
+                    x, y, z = readings[-1]
+                    formatted_coords = f"X: {x} Y: {y} Z: {z}"
+                    self.last_valid_coords = (x, y, z)
+                    self.consecutive_failures = 0
+                    return formatted_coords
+
+            self.consecutive_failures += 1
+            if self.consecutive_failures >= self.max_consecutive_failures:
+                logger.warning("Multiple consecutive coordinate reading failures")
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Coordinate extraction error: {e}")
+            return None
+
+
+def run_coordinate_extraction():
+    """
+    Main coordinate extraction function with error handling.
+    """
+    reader = CoordinateReader()
+    logger.info("Starting coordinate extraction...")
+
+    coords = reader.extract_coordinates()
+    if coords is None:
+        logger.warning("Failed to extract coordinates")
+    else:
+        logger.info(f"Coordinates: {coords}")
+
+    return coords
+
+
+if __name__ == "__main__":
+    run_coordinate_extraction()
