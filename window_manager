@@ -1,0 +1,24 @@
+import pygetwindow as gw
+import time
+
+def activate_game_window():
+    """
+    Activates the game window specified in the config.
+    Ensures the correct window is in focus before proceeding.
+    """
+    # Game window title and delay from config
+    window_title = "Star Wars™: The Old Republic™"  # Replace with config.WINDOW_SETTINGS["GAME_WINDOW_TITLE"]
+    activate_delay = 0.5  # Replace with config.WINDOW_SETTINGS["WINDOW_ACTIVATE_DELAY"]
+
+    # Fetch all open windows
+    windows = gw.getWindowsWithTitle(window_title)
+    if windows:
+        window = windows[0]  # Assume the first match is the desired window
+        if not window.isActive:
+            print(f"Activating window: {window_title}")
+            window.activate()
+            time.sleep(activate_delay)  # Wait for the specified delay
+        #else:
+            #print(f"Window already active: {window_title}")
+    else:
+        print(f"Window not found: {window_title}")
