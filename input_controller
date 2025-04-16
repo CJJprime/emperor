@@ -1,0 +1,170 @@
+import time
+import random
+from typing import Optional, Dict, List, Tuple
+import win32api
+import win32con
+import win32gui
+from config import KEY_BINDINGS, TIMING, HUMANLIKE_SETTINGS, BOT_SETTINGS
+
+
+class InputController:
+    """
+    Manages keyboard input simulation with human-like behavior for game control.
+    Implements movement based on analyzed data with normalized speeds and rotations.
+    """
+
+    def __init__(self):
+        self._held_keys: Dict[str, bool] = {
+            KEY_BINDINGS["MOVE_FORWARD"]: False,
+            KEY_BINDINGS["MOVE_BACKWARD"]: False,
+            KEY_BINDINGS["ROTATE_LEFT"]: False,
+            KEY_BINDINGS["ROTATE_RIGHT"]: False,
+            KEY_BINDINGS["STRAFE_LEFT"]: False,
+            KEY_BINDINGS["STRAFE_RIGHT"]: False
+        }
+
+        # Virtual key codes mapping (using config KEY_BINDINGS)
+        self.vk_codes = {
+            key: ord(binding)
+            for key, binding in KEY_BINDINGS.items()
+        }
+
+        # Normalized movement characteristics
+        self.movement_speeds = {
+            "forward": 8.18,  # Base forward speed
+            "backward": 4.85,  # Base backward speed
+            "strafe": 8.0,  # Normalized strafe speed (both directions)
+            "diagonal": 8.07  # Normalized diagonal speed (all directions)
+        }
+
+        # Normalized turning characteristics
+        self.turn_speeds = {
+            "forward_turn": 110.0,  # Normalized forward turning (both directions)
+            "backward_turn": 141.0,  # Normalized backward turning (both directions)
+        }
+
+        self.movement_multiplier = BOT_SETTINGS["MOVEMENT_SPEED"]
+
+    def _add_human_variance(self, base_duration: float) -> float:
+        """
+        Adds human-like variance to timing durations.
+
+        Args:
+            base_duration: The base duration to add variance to
+
+        Returns:
+            Modified duration with human-like variance
+        """
+        variance = random.uniform(
+            -HUMANLIKE_SETTINGS["keypress_variation"],
+            HUMANLIKE_SETTINGS["keypress_variation"]
+        )
+        return max(0.001, base_duration + variance)
+
+    def _should_simulate_pause(self) -> Tuple[bool, float]:
+        """
+        Determines if and how long to pause for human-like behavior.
+
+        Returns:
+            Tuple of (should_pause: bool, pause_duration: float)
+        """
+        if random.random() < HUMANLIKE_SETTINGS["pause_chance"]:
+            min_pause, max_pause = HUMANLIKE_SETTINGS["pause_duration_range"]
+            return True, random.uniform(min_pause, max_pause)
+        return False, 0.0
+
+    def _send_key(self, key: str, key_up: bool = False) -> None:
+        """
+        Sends a keyboard event with human-like timing variations.
+
+        Args:
+            key: The key binding name from config.KEY_BINDINGS
+            key_up: True for key up event, False for key down
+        """
+        vk_code = self.vk_codes[key]
+
+        # Add humanlike delay
+        time.sleep(self._add_human_variance(TIMING["DEFAULT_KEY_PRESS_DURATION"] * 0.1))
+
+        win32api.keybd_event(
+            vk_code,
+            win32api.MapVirtualKey(vk_code, 0),
+            win32con.KEYEVENTF_KEYUP if key_up else 0,
+            0
+        )
+
+    def hold_key(self, key: str) -> None:
+        """
+        Begin holding a key down.
+
+        Args:
+            key: The key binding name from config.KEY_BINDINGS
+        """
+        if key not in self._held_keys:
+            return
+
+        if not self._held_keys[key]:
+            should_pause, pause_duration = self._should_simulate_pause()
+            if should_pause:
+                time.sleep(pause_duration)
+
+            self._held_keys[key] = True
+            self._send_key(key)
+
+    def release_key(self, key: str) -> None:
+        """
+        Release a held key.
+
+        Args:
+            key: The key binding name from config.KEY_BINDINGS
+        """
+        if key not in self._held_keys:
+            return
+
+        if self._held_keys[key]:
+            self._held_keys[key] = False
+            self._send_key(key, key_up=True)
+
+    def begin_movement(self, movement_type: str) -> None:
+        """
+        Start a specific type of movement.
+
+        Args:
+            movement_type: Type of movement from KEY_BINDINGS
+        """
+        self.hold_key(movement_type)
+
+    def apply_turn(self, direction: str, movement_type: Optional[str] = None) -> None:
+        """
+        Apply turning input, optionally with movement.
+
+        Args:
+            direction: "ROTATE_LEFT" or "ROTATE_RIGHT" from KEY_BINDINGS
+            movement_type: Optional simultaneous movement (e.g., "MOVE_FORWARD")
+        """
+        if movement_type:
+            self.hold_key(movement_type)
+        self.hold_key(direction)
+
+    def stop_turn(self, direction: str, stop_movement: bool = False) -> None:
+        """
+        Stop turning and optionally stop movement.
+
+        Args:
+            direction: "ROTATE_LEFT" or "ROTATE_RIGHT" from KEY_BINDINGS
+            stop_movement: Whether to also stop forward/backward movement
+        """
+        self.release_key(direction)
+        if stop_movement:
+            for key in [KEY_BINDINGS["MOVE_FORWARD"], KEY_BINDINGS["MOVE_BACKWARD"]]:
+                self.release_key(key)
+
+    def stop_all(self) -> None:
+        """Stop all current movement by releasing all held keys."""
+        for key in self._held_keys:
+            if self._held_keys[key]:
+                self.release_key(key)
+
+    def cleanup(self) -> None:
+        """Ensure all keys are released when shutting down."""
+        self.stop_all()
