@@ -1,0 +1,169 @@
+import cv2
+import numpy as np
+import os
+from PIL import ImageGrab, Image
+from typing import Tuple, Dict
+from environment.window_manager import activate_game_window
+from config import SCREEN_REGIONS
+
+
+def capture_arrow_region() -> np.ndarray:
+    """Capture the arrow region from the screen."""
+    try:
+        region = SCREEN_REGIONS["ARROW_ORIENTATION"]
+        top_left = region["top_left"]
+        bottom_right = region["bottom_right"]
+
+        if not (len(top_left) == 2 and len(bottom_right) == 2):
+            raise ValueError("Expected top_left and bottom_right to be 2D coordinates.")
+
+        bbox: Tuple[int, int, int, int] = (*top_left, *bottom_right)
+        screenshot = ImageGrab.grab(bbox=bbox)
+        return cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+    except Exception as error:
+        raise RuntimeError(f"Error capturing arrow region: {error}")
+
+
+def preprocess_image(image: np.ndarray) -> np.ndarray:
+    """Preprocess the image to detect the arrow."""
+    try:
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+        lower_yellow = np.array([15, 80, 180], dtype=np.uint8)
+        upper_yellow = np.array([45, 255, 255], dtype=np.uint8)
+
+        mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+
+        kernel = np.ones((3, 3), np.uint8)
+        mask = cv2.medianBlur(mask, 3)
+        mask = cv2.dilate(mask, kernel, iterations=2)
+        mask = cv2.erode(mask, kernel, iterations=1)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+        return mask
+    except Exception as error:
+        raise RuntimeError(f"Error preprocessing image: {error}")
+
+
+def calculate_center_from_region() -> Tuple[int, int]:
+    """Calculate the center point from the ARROW_ORIENTATION region."""
+    region = SCREEN_REGIONS["ARROW_ORIENTATION"]
+    top_left_x, top_left_y = region["top_left"]
+    bottom_right_x, bottom_right_y = region["bottom_right"]
+
+    center_x = (top_left_x + bottom_right_x) // 2
+    center_y = (top_left_y + bottom_right_y) // 2
+
+    return (center_x, center_y)
+
+
+def calculate_angle(center: Tuple[int, int], tip: Tuple[float, float]) -> float:
+    """Calculate the angle between the center point and the tip point."""
+    try:
+        dx = tip[0] - center[0]
+        dy = tip[1] - center[1]
+        angle = (np.degrees(np.arctan2(dy, dx)) + 360) % 360
+        return angle
+    except Exception as error:
+        raise RuntimeError(f"Error calculating angle: {error}")
+
+
+def determine_direction(angle: float) -> str:
+    """Determine the cardinal direction based on the angle."""
+    try:
+        directions: Dict[str, Tuple[float, float]] = {
+            'E': (0, 22.5),
+            'ESE': (22.5, 67.5),
+            'S': (67.5, 112.5),
+            'SSW': (112.5, 157.5),
+            'W': (157.5, 202.5),
+            'WNW': (202.5, 247.5),
+            'N': (247.5, 292.5),
+            'NNE': (292.5, 337.5),
+            'E2': (337.5, 360)
+        }
+
+        for direction, (min_angle, max_angle) in directions.items():
+            if min_angle <= angle < max_angle:
+                return direction if direction != 'E2' else 'E'
+
+        return 'E'
+    except Exception as error:
+        raise RuntimeError(f"Error determining direction: {error}")
+
+
+def find_arrow_tip(mask: np.ndarray, image: np.ndarray, known_center: Tuple[int, int]) -> Tuple[float, float]:
+    """Find the tip of the arrow in the image."""
+    try:
+        scale = 10
+        large_image = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+        large_mask = cv2.resize(mask, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+
+        # Get region coordinates from config
+        region = SCREEN_REGIONS["ARROW_ORIENTATION"]
+        region_x, region_y = region["top_left"]
+
+        # Convert absolute center coordinates to relative to our region
+        relative_center_x = known_center[0] - region_x
+        relative_center_y = known_center[1] - region_y
+
+        # Scale the relative center
+        center_x = relative_center_x * scale
+        center_y = relative_center_y * scale
+
+        # Get all non-zero points from the mask
+        y_coords, x_coords = np.nonzero(large_mask)
+        if len(y_coords) == 0:
+            raise ValueError("No points found in the mask")
+
+        points = np.column_stack((x_coords, y_coords))
+
+        # Calculate distances from center for all points
+        distances = np.sqrt(((points[:, 0] - center_x) ** 2) +
+                            ((points[:, 1] - center_y) ** 2))
+
+        # Get the point farthest from center
+        farthest_idx = np.argmax(distances)
+        farthest_point = tuple(map(int, points[farthest_idx]))
+
+        # Convert back to original scale and add region offset to get absolute coordinates
+        tip_x = (farthest_point[0] / scale) + region_x
+        tip_y = (farthest_point[1] / scale) + region_y
+
+        return (tip_x, tip_y)
+
+    except Exception as error:
+        raise RuntimeError(f"Error finding arrow tip: {error}")
+
+
+def get_direction() -> Tuple[float, str]:
+    """
+    Get the current direction from the arrow.
+    Returns:
+        Tuple[float, str]: A tuple containing (angle, direction)
+        where angle is in degrees and direction is a cardinal direction string.
+    """
+    try:
+        activate_game_window()
+        arrow_img = capture_arrow_region()
+
+        mask = preprocess_image(arrow_img)
+        center = calculate_center_from_region()
+        tip = find_arrow_tip(mask, arrow_img, center)
+        angle = calculate_angle(center, tip)
+        direction = determine_direction(angle)
+
+        return angle, direction
+
+    except Exception as error:
+        raise RuntimeError(f"Error getting direction: {error}")
+
+
+if __name__ == "__main__":
+    try:
+        angle, direction = get_direction()
+        print(f"Angle from center: {angle:.2f}°")
+        print(f"Direction: {direction}")
+
+    except Exception as error:
+        print(f"Error running direction detector: {error}")
